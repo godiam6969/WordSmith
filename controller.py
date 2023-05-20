@@ -39,10 +39,7 @@ class DictionaryAttack(threading.Thread):
 
     def run(self):  # .start initiates this
         self.view.clear_text_output()  # clear the previous output if any
-        self.view.insert_text_message(
-            f"### INITIALISING ###",
-            update_idle=True
-        )
+        self.view.insert_text_message("### INITIALISING ###", update_idle=True)
         targets = self.attack_targets.get_targets()
         for target in targets:
             if isinstance(target, File):
@@ -50,9 +47,7 @@ class DictionaryAttack(threading.Thread):
             else:
                 self._attack_folder(target)
         self.view.set_current_target("---------")
-        self.view.insert_text_message(
-            f"### PROGRAM END ###"
-        )
+        self.view.insert_text_message("### PROGRAM END ###")
         return None
 
     def _attack_folder(self, target_folder):
@@ -72,10 +67,8 @@ class DictionaryAttack(threading.Thread):
         )
         self.view.set_current_target(target_file)
 
-        is_supported_type = self._is_supported_file(target_file)
-        if is_supported_type:
-            pw_required = self._attempt_open_file(target_file)
-            if pw_required:
+        if is_supported_type := self._is_supported_file(target_file):
+            if pw_required := self._attempt_open_file(target_file):
                 self.view.insert_text_message(
                     f"{target_file} is password protected."
                 )
@@ -121,65 +114,61 @@ class DictionaryAttack(threading.Thread):
         found = False
         last_attempt = 0
         found_password = ""
-        # dont use readlines as it will store the whole file in memory..
-        # just read line by line
-        pws = open(self.password_file, "r", encoding="latin1")
-        for attempt, password in enumerate(pws, 1):
-            password = password.strip()
-            if target_file.file_type == ".rar":
-                try:
-                    # issue rarfile doesnt handle latin1 characters
-                    # so use a different password file or amend the rockyouone
-                    rar_obj = rarfile.RarFile(target_file.file_path, pwd=password)
-                    found = True
-                    found_password = password
-                    last_attempt = attempt
-                    rar_obj.extractall(self.save_destination)
-                    break
-                except RuntimeError as err:
-                    if str(err).startswith("Bad password"):
-                        update_idle = (attempt % 5 == 0)
-                        self.view.insert_text_message(
-                            f"Attempt {attempt}: '{password}' failed.",
-                            update_idle=update_idle
-                        )
-                        if attempt % 250 == 0:
-                            self.view.clear_text_output()
-                        continue
-                    else:
-                        self.view.display_messagebox(err, "showerror")
+        with open(self.password_file, "r", encoding="latin1") as pws:
+            for attempt, password in enumerate(pws, 1):
+                password = password.strip()
+                if target_file.file_type == ".rar":
+                    try:
+                        # issue rarfile doesnt handle latin1 characters
+                        # so use a different password file or amend the rockyouone
+                        rar_obj = rarfile.RarFile(target_file.file_path, pwd=password)
+                        found = True
+                        found_password = password
+                        last_attempt = attempt
+                        rar_obj.extractall(self.save_destination)
                         break
+                    except RuntimeError as err:
+                        if str(err).startswith("Bad password"):
+                            update_idle = (attempt % 5 == 0)
+                            self.view.insert_text_message(
+                                f"Attempt {attempt}: '{password}' failed.",
+                                update_idle=update_idle
+                            )
+                            if attempt % 250 == 0:
+                                self.view.clear_text_output()
+                            continue
+                        else:
+                            self.view.display_messagebox(err, "showerror")
+                            break
 
-            elif target_file.file_type == ".zip":
-                try:
-                    password_byte = bytes(password, "latin1")
-                    ZipFile(target_file.file_path).extractall(path=self.save_destination,
-                                                              pwd=password_byte)
-                    found = True
-                    found_password = password_byte.decode("latin1")
-                    last_attempt = attempt
-                    break
-                except RuntimeError as err:
-                    if str(err).startswith("Bad password"):
-                        update_idle = (attempt % 5 == 0)
-                        self.view.insert_text_message(
-                            f"Attempt {attempt}: '{password}' failed.",
-                            update_idle=update_idle
-                        )
-                        if attempt % 250 == 0:
-                            self.view.clear_text_output()
-                    else:
-                        self.view.display_messagebox(err, "showerror")
+                elif target_file.file_type == ".zip":
+                    try:
+                        password_byte = bytes(password, "latin1")
+                        ZipFile(target_file.file_path).extractall(path=self.save_destination,
+                                                                  pwd=password_byte)
+                        found = True
+                        found_password = password_byte.decode("latin1")
+                        last_attempt = attempt
                         break
-                except zlib.error as zerr:
-                    if str(zerr).startswith("Error -3"):
-                        # If there are compression errors then skip
-                        continue
-                    else:
+                    except RuntimeError as err:
+                        if str(err).startswith("Bad password"):
+                            update_idle = (attempt % 5 == 0)
+                            self.view.insert_text_message(
+                                f"Attempt {attempt}: '{password}' failed.",
+                                update_idle=update_idle
+                            )
+                            if attempt % 250 == 0:
+                                self.view.clear_text_output()
+                        else:
+                            self.view.display_messagebox(err, "showerror")
+                            break
+                    except zlib.error as zerr:
+                        if str(zerr).startswith("Error -3"):
+                            # If there are compression errors then skip
+                            continue
                         self.view.display_messagebox(zerr, "showerror")
                         break
 
-        pws.close()
         if found:
             self.view.insert_text_message(
                 f"Attempt {last_attempt}: '{found_password}'"
@@ -199,7 +188,7 @@ class DictionaryAttack(threading.Thread):
             self.view.insert_text_message(
                 f"password will be saved to {self.save_destination}"
             )
-            self.view.insert_text_message(f"________________")
+            self.view.insert_text_message("________________")
             self._store_password(found_password, target_file.file_path)
 
         else:
@@ -211,9 +200,8 @@ class DictionaryAttack(threading.Thread):
     def _store_password(self, password, target_path):
         line = f"{password} | {target_path}\n"
         dest = fr"{self.save_destination}\extracted_passwords.txt"
-        f = open(dest, "a+")
-        f.write(line)
-        f.close()
+        with open(dest, "a+") as f:
+            f.write(line)
         self.view.insert_text_message(
             f"Found password stored to {dest}"
         )

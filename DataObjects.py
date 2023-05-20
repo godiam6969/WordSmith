@@ -18,7 +18,7 @@ class File(object):
         print(self.file_path)
         p = Path(self.file_path)
         self.name = p.name
-        if p.suffix == "":
+        if not p.suffix:
             raise FileNotFoundError(
                 f"{self.file_path} has to be a file not a folder"
                 )
@@ -67,11 +67,11 @@ class AttackTargets(object):
     def add_target(self, target):
         # A target is a tuple in the form ["type", "include_subfolders", "target_path"]
         target_type = target[0]
-        include_subfolders = target[1]
         target_path = target[2]
         if target_type == "File":
             self._add_target_file(target_path=target_path)
         else:
+            include_subfolders = target[1]
             self._add_target_folder(target_path=target_path,
                                     include_subfolders=include_subfolders)
 
