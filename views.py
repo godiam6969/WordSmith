@@ -109,13 +109,11 @@ class MainPage(tk.Frame):
     def _windows_dialog(self, is_folder=False, only_text=False):
         selection = None
         if is_folder:
-            selection = filedialog.askdirectory()
-        else:
-            type1 = ("All Files", "*.*") if not only_text else ("Text Files", "*.txt")
-            selection = filedialog.askopenfilename(initialdir="/",
-                                                   title="Select a File",
-                                                   filetype=[type1])
-        return selection
+            return filedialog.askdirectory()
+        type1 = ("All Files", "*.*") if not only_text else ("Text Files", "*.txt")
+        return filedialog.askopenfilename(
+            initialdir="/", title="Select a File", filetype=[type1]
+        )
 
     def _set_dictionary_list(self):
         selection = self._windows_dialog(only_text=True)
@@ -141,8 +139,7 @@ class MainPage(tk.Frame):
         self.tv_target.insert("", "end", values=row)
 
     def _delete_tv_row(self, event):
-        row = self.tv_target.selection()
-        if row:
+        if row := self.tv_target.selection():
             self.tv_target.delete(row[0])
 
     def insert_text_message(self, message, update_idle=False):
@@ -164,7 +161,6 @@ class MainPage(tk.Frame):
         self.label_current_target["text"] = current_target
 
     def _launch_dictionary_attack(self):
-        password_hash_type = "Plain Text"  # self.hash.get()
         password_file = self.label_dict_file["text"]
         save_dest = self.label_extract_dest["text"]
 
@@ -181,6 +177,7 @@ class MainPage(tk.Frame):
         if not all_targets:
             self.display_messagebox("There are no targets", type="showinfo")
         else:
+            password_hash_type = "Plain Text"  # self.hash.get()
             self.controller.launch_attack(password_file=password_file,
                                           save_destination=save_dest,
                                           hash_type=password_hash_type,
